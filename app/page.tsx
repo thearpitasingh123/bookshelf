@@ -1,9 +1,25 @@
+"use client";
+import { auth, provider } from "./firebase";
+import { signInWithPopup } from "firebase/auth";
+import { useRouter } from "next/navigation";
+
 export default function Home() {
+  const router = useRouter();
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+      router.push("/library");
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#0D0D0D] flex items-center justify-center px-8">
       <div className="max-w-6xl w-full flex items-center justify-between gap-16">
         
-        {/* Left side - Text content */}
+        {/* Left side */}
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-8">
             <span className="text-4xl">📚</span>
@@ -20,7 +36,10 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col gap-4 max-w-sm">
-            <button className="bg-[#C9A84C] text-black font-semibold py-4 px-8 rounded-full text-lg hover:bg-[#b8963d] transition-colors">
+            <button
+              onClick={handleGoogleLogin}
+              className="bg-[#C9A84C] text-black font-semibold py-4 px-8 rounded-full text-lg hover:bg-[#b8963d] transition-colors"
+            >
               Continue with Google
             </button>
             <button className="border border-[#C9A84C] text-[#C9A84C] font-semibold py-4 px-8 rounded-full text-lg hover:bg-[#C9A84C] hover:text-black transition-colors">
@@ -36,7 +55,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Right side - Book covers visual */}
+        {/* Right side */}
         <div className="flex-1 flex items-center justify-center">
           <div className="grid grid-cols-3 gap-4">
             {["#1A1A2E", "#16213E", "#0F3460", "#1A1A2E", "#2D1B69", "#1A1A2E"].map((color, i) => (
