@@ -189,6 +189,13 @@ export default function BookDetailModal({ book, onClose }: Props) {
       >
         {adding === "already_read" ? "Adding..." : "✓ Already Read"}
       </button>
+      <button
+  onClick={() => handleAdd("library", "have_not_read")}
+  disabled={!!adding}
+  className="flex-1 bg-[#ffffff11] text-white font-bold py-2.5 rounded-full hover:bg-[#ffffff22] transition text-sm"
+>
+  {adding === "have_not_read" ? "Adding..." : "📦 Have It"}
+</button>
     </div>
     <button
       onClick={() => handleAdd("wishlist", "")}

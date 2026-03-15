@@ -78,10 +78,11 @@ setBooks(data.sort((a, b) => a.title.localeCompare(b.title)));
 
       <div className="flex gap-2 mb-8">
         {[
-          { label: "Currently Reading", value: "currently_reading" },
-          { label: "Already Read", value: "already_read" },
-          { label: "All Books", value: "all" },
-        ].map((tab) => (
+  { label: "Currently Reading", value: "currently_reading" },
+  { label: "Already Read", value: "already_read" },
+  { label: "Have But Not Read", value: "have_not_read" },
+  { label: "All Books", value: "all" },
+].map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
@@ -145,6 +146,14 @@ setBooks(data.sort((a, b) => a.title.localeCompare(b.title)));
                   onClick={() => moveToWishlist(book.id)}
                   className="w-full bg-[#ffffff08] text-[#888888] text-xs font-semibold py-1.5 rounded-lg hover:bg-[#ffffff11] transition"
                 >
+                  {book.status === "have_not_read" && (
+  <button
+    onClick={() => updateStatus(book.id, "currently_reading")}
+    className="w-full bg-[#C9A84C] text-black text-xs font-semibold py-1.5 rounded-lg hover:bg-[#b8963d] transition"
+  >
+    📖 Start Reading
+  </button>
+)}
                   🔖 Move to Wishlist
                 </button>
                 <button
