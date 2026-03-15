@@ -47,7 +47,11 @@ export default function AddBookModal({ onClose }: any) {
     setAdding(book.title + (status || list));
 
     const snapshot = await getDocs(
-      query(collection(db, "books"), where("userId", "==", user.uid), where("title", "==", book.title))
+      query(
+        collection(db, "books"),
+        where("userId", "==", user.uid),
+        where("title", "==", book.title)
+      )
     );
 
     if (!snapshot.empty) {
@@ -101,21 +105,31 @@ export default function AddBookModal({ onClose }: any) {
           style={{ scrollbarWidth: "thin", scrollbarColor: "#C9A84C #0D0D0D" }}
         >
           {results.length === 0 && !loading && (
-            <p className="text-[#888888] text-center py-8">Search for a book to get started 📚</p>
+            <p className="text-[#888888] text-center py-8">
+              Search for a book to get started 📚
+            </p>
           )}
 
           {results.map((book, i) => (
             <div key={i} className="flex gap-4 bg-[#0D0D0D] rounded-xl p-4 items-center">
               {book.cover ? (
-                <img src={book.cover} alt={book.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0" />
+                <img
+                  src={book.cover}
+                  alt={book.title}
+                  className="w-14 h-20 rounded-lg object-cover flex-shrink-0"
+                />
               ) : (
-                <div className="w-14 h-20 rounded-lg bg-[#1A1A2E] flex-shrink-0 flex items-center justify-center text-2xl">📖</div>
+                <div className="w-14 h-20 rounded-lg bg-[#1A1A2E] flex-shrink-0 flex items-center justify-center text-2xl">
+                  📖
+                </div>
               )}
 
               <div className="flex-1 min-w-0">
                 <h3 className="text-white font-semibold truncate">{book.title}</h3>
                 <p className="text-[#888888] text-sm">{book.author}</p>
-                {book.year && <p className="text-[#888888] text-xs mt-0.5">{book.year}</p>}
+                {book.year && (
+                  <p className="text-[#888888] text-xs mt-0.5">{book.year}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5 flex-shrink-0">
@@ -132,6 +146,13 @@ export default function AddBookModal({ onClose }: any) {
                   className="text-xs bg-[#C9A84C22] text-[#C9A84C] font-semibold px-3 py-1.5 rounded-full hover:bg-[#C9A84C33] transition-colors whitespace-nowrap"
                 >
                   ✓ Already Read
+                </button>
+                <button
+                  onClick={() => addBook(book, "library", "have_not_read")}
+                  disabled={adding === book.title + "have_not_read"}
+                  className="text-xs bg-[#ffffff11] text-white font-semibold px-3 py-1.5 rounded-full hover:bg-[#ffffff22] transition-colors whitespace-nowrap"
+                >
+                  📦 Have It
                 </button>
                 <button
                   onClick={() => addBook(book, "wishlist")}
