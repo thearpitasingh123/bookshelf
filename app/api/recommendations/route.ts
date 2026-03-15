@@ -1,46 +1,63 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const { books } = await req.json();
 
     if (!books || books.length === 0) {
-      return NextResponse.json({
-        recommendations: "You haven't marked any books as 'Already Read' yet! Start reading and mark books as read to get personalised recommendations. 📚"
-      });
+      return NextResponse.json({ recommendations: [] });
     }
 
-    const bookList = books
-      .map((b: any) => `"${b.title}" by ${b.author}`)
-      .join(", ");
+    const baseBook = books[Math.floor(Math.random() * books.length)];
 
-    const prompt = `You are a friendly book recommendation assistant. 
-    
-The user has already read these books: ${bookList}.
+    const author = baseBook.author || "";
+    const year = parseInt(baseBook.year || "2000");
 
-Based on their reading history, recommend exactly 3 books they would love. 
-For each book provide:
-- Title
-- Author  
-- One sentence explaining why they'd enjoy it based on their reading history
+    const minYear = year - 5;
+    const maxYear = year + 5;
 
-Format your response exactly like this for each book:
-BOOK: [title]
-AUTHOR: [author]
-REASON: [reason]
+    const searchQuery = encodeURIComponent(author);
 
-Be specific and reference their actual reading history in the reasons.`;
+    const res = await fetch(
+      `https://openlibrary.org/search.json?author=${searchQuery}&limit=40`
+    );
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const data = await res.json();
 
-    return NextResponse.json({ recommendations: text });
+    const userTitles = books.map((b:any) =>
+      b.title?.toLowerCase()
+    );
+
+    const filtered = data.docs.filter((b:any) => {
+      if (!b.cover_i) return false;
+
+      const publishYear = b.first_publish_year;
+      if (!publishYear) return false;
+
+      if (publishYear < minYear || publishYear > maxYear) return false;
+
+      if (userTitles.includes(b.title?.toLowerCase())) return false;
+
+      return true;
+    });
+
+    const recommendations = filtered
+      .slice(0, 6)
+      .map((b:any) => ({
+        title: b.title,
+        author: b.author_name?.[0] || "Unknown",
+        year: b.first_publish_year,
+        cover: `https://covers.openlibrary.org/b/id/${b.cover_i}-L.jpg`,
+        reason: `Similar to ${author} books around ${year}`
+      }));
+
+    return NextResponse.json({ recommendations });
+
   } catch (error) {
-    console.error("Gemini error:", error);
-    return NextResponse.json({ error: "Failed to get recommendations" }, { status: 500 });
+
+    console.error("Recommendation error:", error);
+
+    return NextResponse.json({ recommendations: [] });
+
   }
 }

@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { db, auth } from "../firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
+import { collection, query, where, onSnapshot, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import AddBookModal from "../components/AddBookModal";
+import BookDetailModal from "../components/BookDetailModal";
 
 interface Book {
   id: string;
@@ -11,40 +11,48 @@ interface Book {
   author: string;
   cover: string;
   genre: string;
+  year: string;
   status: string;
   list: string;
 }
 
 export default function Wishlist() {
-  const [showModal, setShowModal] = useState(false);
   const [books, setBooks] = useState<Book[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        const q = query(
-          collection(db, "books"),
-          where("userId", "==", user.uid),
-          where("list", "==", "wishlist")
-        );
-        const unsubDb = onSnapshot(q, (snapshot) => {
-          const data = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as Book[];
-          setBooks(data);
-        });
-        return () => unsubDb();
-      }
+    const unsub = auth.onAuthStateChanged((user) => {
+      if (!user) return;
+      const q = query(
+        collection(db, "books"),
+        where("userId", "==", user.uid),
+        where("list", "==", "wishlist")
+      );
+      return onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Book[];
+setBooks(data.sort((a, b) => a.title.localeCompare(b.title)));
+      });
     });
-    return () => unsubAuth();
+    return () => unsub();
   }, []);
+
+  const moveToLibrary = async (id: string, status: string) => {
+    await updateDoc(doc(db, "books", id), { list: "library", status });
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteDoc(doc(db, "books", id));
+    if (selectedBook?.id === id) setSelectedBook(null);
+  };
 
   return (
     <div>
       {showModal && <AddBookModal onClose={() => setShowModal(false)} />}
+      {selectedBook && (
+        <BookDetailModal book={selectedBook} onClose={() => setSelectedBook(null)} />
+      )}
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">My Wishlist 🔖</h1>
@@ -58,7 +66,6 @@ export default function Wishlist() {
         </button>
       </div>
 
-      {/* Books Grid */}
       {books.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="text-6xl mb-4">🔖</p>
@@ -68,25 +75,45 @@ export default function Wishlist() {
       ) : (
         <div className="grid grid-cols-4 gap-4">
           {books.map((book) => (
-            <div
-              key={book.id}
-              className="bg-[#1A1A2E] rounded-2xl p-4 hover:bg-[#1f1f3d] transition-colors cursor-pointer group"
-            >
-              <div className="relative">
+            <div key={book.id} className="bg-[#1A1A2E] p-4 rounded-2xl hover:bg-[#1f1f3d] transition-colors">
+              <div
+                className="cursor-pointer"
+                onClick={() => setSelectedBook(book)}
+              >
                 {book.cover ? (
-                  <img src={book.cover} alt={book.title} className="w-full h-36 rounded-xl mb-3 object-cover" />
+                  <img src={book.cover} alt={book.title} className="w-full h-48 object-cover bg-black rounded-xl mb-3" />
                 ) : (
-                  <div className="w-full h-36 rounded-xl mb-3 bg-[#0D0D0D] flex items-center justify-center text-4xl">📖</div>
+                  <div className="w-full h-48 rounded-xl mb-3 bg-[#0D0D0D] flex items-center justify-center text-4xl">📖</div>
                 )}
-                <div className="absolute top-2 right-2 bg-[#C9A84C] text-black text-xs px-2 py-1 rounded-full">
-                  🔖
-                </div>
+                <h3 className="text-white font-semibold text-sm truncate">{book.title}</h3>
+                <p className="text-[#888888] text-xs mt-1 truncate">{book.author}</p>
+                {book.genre && (
+                  <span className="text-xs bg-[#C9A84C22] text-[#C9A84C] px-2 py-1 rounded-full mt-2 inline-block">
+                    {book.genre}
+                  </span>
+                )}
               </div>
-              <h3 className="text-white font-semibold text-sm truncate">{book.title}</h3>
-              <p className="text-[#888888] text-xs mt-1 truncate">{book.author}</p>
-              <button className="w-full mt-3 py-2 rounded-full border border-[#C9A84C] text-[#C9A84C] text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#C9A84C] hover:text-black">
-                Move to Library
-              </button>
+
+              <div className="flex flex-col gap-1 mt-3">
+                <button
+                  onClick={() => moveToLibrary(book.id, "currently_reading")}
+                  className="w-full bg-[#C9A84C] text-black text-xs font-semibold py-1.5 rounded-lg hover:bg-[#b8963d] transition"
+                >
+                  📖 Move to Reading
+                </button>
+                <button
+                  onClick={() => moveToLibrary(book.id, "already_read")}
+                  className="w-full bg-[#C9A84C22] text-[#C9A84C] text-xs font-semibold py-1.5 rounded-lg hover:bg-[#C9A84C33] transition"
+                >
+                  ✓ Mark as Read
+                </button>
+                <button
+                  onClick={() => handleDelete(book.id)}
+                  className="w-full bg-red-900 text-red-400 text-xs font-semibold py-1.5 rounded-lg hover:bg-red-800 transition"
+                >
+                  🗑 Remove
+                </button>
+              </div>
             </div>
           ))}
         </div>
