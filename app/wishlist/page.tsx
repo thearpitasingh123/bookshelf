@@ -81,7 +81,7 @@ setBooks(data.sort((a, b) => a.title.localeCompare(b.title)));
                 onClick={() => setSelectedBook(book)}
               >
                 {book.cover ? (
-                  <img src={book.cover} alt={book.title} className="w-full h-48 object-cover bg-black rounded-xl mb-3" />
+                  <img src={book.cover} alt={book.title} className="w-full h-48 rounded-xl mb-3 object-contain bg-[#0D0D0D]" />
                 ) : (
                   <div className="w-full h-48 rounded-xl mb-3 bg-[#0D0D0D] flex items-center justify-center text-4xl">📖</div>
                 )}
